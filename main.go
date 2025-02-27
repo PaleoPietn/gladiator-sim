@@ -24,11 +24,14 @@ func main() {
 	}
 	screen.Clear()
 
+	// Starting Screen and Character Creation Screen
+	playerName := ui.ShowStartScreen(screen)
+
 	// Create game handler
 	gameHandler := &game.GameHandler{}
 
 	// Create hero
-	hero := game.NewHero("Hero")
+	hero := game.NewHero(playerName)
 
 	// Initialize game state
 	gameState := game.NewGameState()

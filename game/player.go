@@ -4,7 +4,6 @@ import model "stuff/models"
 
 // Default stats for Player Character
 var heroDefaultStats = model.Player{
-	Name:         "Hero",
 	Wins:         0,
 	IsHero:       true,
 	Health:       130,
