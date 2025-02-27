@@ -122,10 +122,6 @@ func FormatBattleMessage(result model.BattleResult) string {
 	if result.IsBlocked {
 		msg += " 󰒘 BLOCKED!"
 	}
-	if result.Regeneration > 0 {
-		msg += fmt.Sprintf(" 󰎑 %s regenerates %d health!", result.Defender.Name, result.Regeneration)
-	}
-
 	return msg
 }
 
@@ -136,6 +132,12 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 		fmt.Sprintf("%s vs %s", hero.Name, enemy.Name),
 		"",
 	}
+
+	if enemy.Description != "" {
+		gameState.BattleLog = append(gameState.BattleLog, enemy.Description)
+	}
+
+	gameState.BattleLog = append(gameState.BattleLog, "")
 
 	// Call the UI package to draw the initial battle screen
 	ui.DrawUI(screen, hero, enemy, gameState)
@@ -180,9 +182,24 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 					} else {
 						// Hero won
 						gameState.AddToBattleLog(fmt.Sprintf("🏆 %s is VICTORIOUS! 🏆", hero.Name))
-						gameState.AddToBattleLog("Choose an upgrade to continue your journey!")
-						gameState.UpgradeMode = true
-						gameState.Upgrades = CreateUpgrades()
+
+						if hero.Wins >= len(enemyTypes)+1 {
+							gameState.AddToBattleLog("🎉 LEGENDARY VICTORY! You've defeated The Immortal! 🎉")
+							gameState.AddToBattleLog("🏆 Your name will be remembered for eternity! 🏆")
+							gameState.GameOver = true
+
+							// Prepare for final battle
+						} else if hero.Wins == len(enemyTypes) {
+							gameState.AddToBattleLog("You've defeated all champions! Now face THE IMMORTAL!")
+							gameState.UpgradeMode = true
+							gameState.Upgrades = CreateUpgrades()
+
+							// Otherwise, prepare for next battle
+						} else {
+							gameState.AddToBattleLog("Choose an upgrade to continue your journey!")
+							gameState.UpgradeMode = true
+							gameState.Upgrades = CreateUpgrades()
+						}
 					}
 
 					// Update the UI with the final battle state

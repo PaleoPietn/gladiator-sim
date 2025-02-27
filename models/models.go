@@ -8,13 +8,14 @@ type Player struct {
 	AttackMin    int
 	AttackMax    int
 	Defense      int
-	Wins         int
 	IsHero       bool
+	Wins         int
 	CritChance   int
 	BlockChance  int
 	LifeSteal    int
 	CritDamage   int
 	Regeneration int
+	Description  string
 }
 
 // BattleResult contains the outcome of an attack
