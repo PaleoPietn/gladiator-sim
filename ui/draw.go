@@ -32,6 +32,11 @@ func DrawHealthBar(current, max int, width int) string {
 
 // DrawUI renders the game interface to the screen
 func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameState *model.GameState) {
+	buffs := ""
+	if hero.Regeneration > 0 {
+		buffs += " 🌿"
+	}
+
 	screen.Clear()
 
 	// Helper function to draw text with proper handling of wide characters
@@ -53,7 +58,7 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 	infoStyle := defaultStyle.Foreground(tcell.ColorWhite)
 	selectedStyle := defaultStyle.Background(tcell.ColorDarkBlue).Foreground(tcell.ColorWhite)
 	criticalStyle := defaultStyle.Foreground(tcell.ColorYellow)
-	blockStyle := defaultStyle.Foreground(tcell.ColorDarkBlue)
+	blockStyle := defaultStyle.Foreground(tcell.ColorTeal)
 
 	// Draw title and stats
 	printText(2, 1, "ROGUELIKE GLADIATOR ARENA", titleStyle)
@@ -63,7 +68,7 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 	heroHealthBar := DrawHealthBar(hero.Health, hero.MaxHealth, healthBarWidth)
 	enemyHealthBar := DrawHealthBar(enemy.Health, enemy.MaxHealth, healthBarWidth)
 
-	printText(2, 3, fmt.Sprintf("%s", hero.Name), heroStyle)
+	printText(2, 3, fmt.Sprintf("%s %s", hero.Name, buffs), heroStyle)
 	printText(2, 4, fmt.Sprintf("HP: %d/%d %s", hero.Health, hero.MaxHealth, heroHealthBar), heroStyle)
 	printText(2, 5, fmt.Sprintf("ATK: %d-%d | DEF: %d | Wins: %d",
 		hero.AttackMin, hero.AttackMax, hero.Defense, hero.Wins), heroStyle)

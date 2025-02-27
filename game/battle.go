@@ -25,12 +25,31 @@ func RandRange(min, max int) int {
 // CalculateDamage determines attack damage with critical hits and blocks
 func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	damage := RandRange(attacker.AttackMin, attacker.AttackMax)
-	isCritical := rand.Intn(model.CriticalChance) == 0
-	isBlocked := rand.Intn(model.BlockChance) == 0
+
+	// Use attacker's crit chance instead of fixed value
+	critChance := model.CriticalChance
+	if attacker.CritChance > 0 {
+		critChance = attacker.CritChance
+	}
+
+	// Use defender's block chance instead of fixed value
+	blockChance := model.BlockChance
+	if defender.BlockChance > 0 {
+		blockChance = defender.BlockChance
+	}
+
+	isCritical := rand.Intn(100) < critChance
+	isBlocked := rand.Intn(100) < blockChance
 
 	if isCritical {
-		damage *= 2
+		// Apply crit damage bonus if available
+		critMultiplier := 2.0
+		if attacker.CritDamage > 0 {
+			critMultiplier = 2.0 + (float64(attacker.CritDamage) / 100.0)
+		}
+		damage = int(float64(damage) * critMultiplier)
 	}
+
 	if isBlocked {
 		damage /= 2
 	}
@@ -42,6 +61,31 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	}
 
 	defender.Health -= damage
+
+	// Apply life steal if attacker has it
+	if attacker.LifeSteal > 0 {
+		healAmount := int(float64(damage) * float64(attacker.LifeSteal) / 100.0)
+		if healAmount > 0 {
+			attacker.Health += healAmount
+			if attacker.Health > attacker.MaxHealth {
+				attacker.Health = attacker.MaxHealth
+			}
+		}
+	}
+
+	regen := 0
+	// Apply regeneration if attacker has it
+	if defender.Regeneration > 0 {
+		healAmount := int(float64(defender.MaxHealth) * float64(defender.Regeneration) / 100.0)
+		regen = healAmount
+		if healAmount > 0 {
+			defender.Health += healAmount
+			if defender.Health > defender.MaxHealth {
+				defender.Health = defender.MaxHealth
+			}
+		}
+	}
+
 	isGameOver := defender.Health <= 0
 
 	// Ensure health doesn't go below zero for display purposes
@@ -56,27 +100,30 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	}
 
 	return model.BattleResult{
-		Attacker:   attacker,
-		Defender:   defender,
-		Damage:     damage,
-		IsCritical: isCritical,
-		IsBlocked:  isBlocked,
-		IsGameOver: isGameOver,
-		WinnerName: winnerName,
+		Attacker:     attacker,
+		Defender:     defender,
+		Damage:       damage,
+		IsCritical:   isCritical,
+		IsBlocked:    isBlocked,
+		IsGameOver:   isGameOver,
+		WinnerName:   winnerName,
+		Regeneration: regen,
 	}
 }
 
 // FormatBattleMessage creates a descriptive message for the battle log
 func FormatBattleMessage(result model.BattleResult) string {
-	msg := fmt.Sprintf("%s strikes %s for %d damage! (%s HP: %d/%d)",
-		result.Attacker.Name, result.Defender.Name, result.Damage,
-		result.Defender.Name, result.Defender.Health, result.Defender.MaxHealth)
+	msg := fmt.Sprintf("%s strikes %s for %d damage!",
+		result.Attacker.Name, result.Defender.Name, result.Damage)
 
 	if result.IsCritical {
-		msg += " 💥 CRITICAL HIT!"
+		msg += " 󰓥 CRITICAL HIT!"
 	}
 	if result.IsBlocked {
-		msg += " 🛡️  BLOCKED!"
+		msg += " 󰒘 BLOCKED!"
+	}
+	if result.Regeneration > 0 {
+		msg += fmt.Sprintf(" 󰎑 %s regenerates %d health!", result.Defender.Name, result.Regeneration)
 	}
 
 	return msg
@@ -116,6 +163,15 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 				if result.IsGameOver {
 					gameState.AddToBattleLog("")
 
+					if hero.Wins >= 9 {
+						// Game is over
+						gameState.AddToBattleLog("🎉 Congratulations! You've defeated all Enemies! 🎉")
+						gameState.AddToBattleLog("🏆 You are the CHAMPION! 🏆")
+						gameState.GameOver = true
+						ui.DrawUI(screen, hero, enemy, gameState)
+						done <- true
+						return
+					}
 					if defender.IsHero {
 						// Hero lost
 						gameState.AddToBattleLog(fmt.Sprintf("💀 %s has fallen! GAME OVER 💀", hero.Name))
@@ -126,6 +182,7 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 						gameState.AddToBattleLog(fmt.Sprintf("🏆 %s is VICTORIOUS! 🏆", hero.Name))
 						gameState.AddToBattleLog("Choose an upgrade to continue your journey!")
 						gameState.UpgradeMode = true
+						gameState.Upgrades = CreateUpgrades()
 					}
 
 					// Update the UI with the final battle state

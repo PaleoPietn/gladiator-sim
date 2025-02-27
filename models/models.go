@@ -2,25 +2,31 @@ package model
 
 // Player represents a gladiator with stats and abilities
 type Player struct {
-	Name      string
-	Health    int
-	MaxHealth int
-	AttackMin int
-	AttackMax int
-	Defense   int
-	Wins      int
-	IsHero    bool
+	Name         string
+	Health       int
+	MaxHealth    int
+	AttackMin    int
+	AttackMax    int
+	Defense      int
+	Wins         int
+	IsHero       bool
+	CritChance   int
+	BlockChance  int
+	LifeSteal    int
+	CritDamage   int
+	Regeneration int
 }
 
 // BattleResult contains the outcome of an attack
 type BattleResult struct {
-	Attacker   *Player
-	Defender   *Player
-	Damage     int
-	IsCritical bool
-	IsBlocked  bool
-	IsGameOver bool
-	WinnerName string
+	Attacker     *Player
+	Defender     *Player
+	Damage       int
+	IsCritical   bool
+	IsBlocked    bool
+	IsGameOver   bool
+	WinnerName   string
+	Regeneration int
 }
 
 // GameState tracks the overall game progression
