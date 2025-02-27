@@ -28,7 +28,7 @@ func main() {
 	gameHandler := &game.GameHandler{}
 
 	// Create hero
-	hero := game.NewHero()
+	hero := game.NewHero("Hero")
 
 	// Initialize game state
 	gameState := game.NewGameState()
