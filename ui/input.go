@@ -1,9 +1,9 @@
-// ui/input.go
 package ui
 
 import (
+	model "stuff/models"
+
 	"github.com/gdamore/tcell/v2"
-	"stuff/models" // Make sure this matches your actual import path
 )
 
 // InputHandler defines the interface for handling game input
@@ -23,10 +23,8 @@ func HandleInput(ev tcell.Event, screen tcell.Screen, hero *model.Player,
 	switch ev := ev.(type) {
 	case *tcell.EventKey:
 		if gameState.UpgradeMode {
-			// Handle upgrade selection
 			return handleUpgradeInput(ev, screen, hero, enemy, gameState, handler, quit, done)
 		} else {
-			// Regular key handling
 			return handleRegularInput(ev, screen, hero, enemy, gameState, handler, quit, done)
 		}
 	case *tcell.EventResize:
@@ -52,7 +50,6 @@ func handleUpgradeInput(ev *tcell.EventKey, screen tcell.Screen, hero *model.Pla
 		DrawUI(screen, hero, enemy, gameState)
 		return false
 	case tcell.KeyEnter:
-		// Apply the selected upgrade
 		handler.HandleUpgrade(hero, gameState.Upgrades[gameState.SelectedUpgrade])
 
 		// Prepare for next battle
@@ -60,13 +57,11 @@ func handleUpgradeInput(ev *tcell.EventKey, screen tcell.Screen, hero *model.Pla
 		gameState.UpgradeMode = false
 		newEnemy := handler.CreateEnemy(gameState.CurrentEnemy)
 
-		// Add upgrade info to battle log
 		gameState.AddToBattleLog(
 			"Upgrade chosen: " + gameState.Upgrades[gameState.SelectedUpgrade].Name)
 		gameState.AddToBattleLog(
 			"Preparing for battle against " + newEnemy.Name + "...")
 
-		// Start next battle
 		handler.StartBattle(hero, newEnemy, screen, gameState, quit, done)
 		return false
 	}
@@ -86,14 +81,11 @@ func handleRegularInput(ev *tcell.EventKey, screen tcell.Screen, hero *model.Pla
 		case 'r':
 			// Only allow restart after game over
 			if gameState.GameOver {
-				// Reset hero and game state
 				handler.ResetHero(hero)
 				handler.ResetGameState(gameState)
 
-				// Create new enemy
 				newEnemy := handler.CreateEnemy(gameState.CurrentEnemy)
 
-				// Start new battle
 				gameState.AddToBattleLog("Starting a new adventure...")
 				handler.StartBattle(hero, newEnemy, screen, gameState, quit, done)
 			}

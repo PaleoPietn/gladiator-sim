@@ -1,24 +1,25 @@
 package game
 
-import "stuff/models"
+import model "stuff/models"
 
 // NewGameState creates a new game state
 func NewGameState() *model.GameState {
 	return &model.GameState{
 		CurrentEnemy:    1,
 		UpgradeMode:     false,
-		Upgrades:        CreateUpgrades(),
 		SelectedUpgrade: 0,
 		BattleLog:       []string{},
 		GameOver:        false,
 	}
 }
 
-// ResetGameState resets the game state for a new run
-func (h *GameHandler) ResetGameState(gs *model.GameState) {
-	gs.CurrentEnemy = 1
-	gs.UpgradeMode = false
-	gs.SelectedUpgrade = 0
-	gs.BattleLog = []string{}
-	gs.GameOver = false
+// ResetGameState resets the game state to starting values
+func (h *GameHandler) ResetGameState(state *model.GameState) {
+	state.CurrentEnemy = 1
+	state.GameOver = false
+	state.UpgradeMode = false
+	state.BattleLog = []string{}
+	state.SelectedUpgrade = 0
+
+	ResetUpgradeTracker()
 }

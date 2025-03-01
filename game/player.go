@@ -31,7 +31,7 @@ func (h *GameHandler) ResetHero(hero *model.Player) {
 	name := hero.Name
 
 	// reset hero stats
-	hero = &heroDefaultStats
+	*hero = heroDefaultStats
 
 	// set old name
 	hero.Name = name

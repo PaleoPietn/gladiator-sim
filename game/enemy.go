@@ -9,15 +9,15 @@ import (
 // EnemyType defines a template for creating enemies with specific characteristics
 type EnemyType struct {
 	Name         string
-	HealthMod    float64 // Multiplier for base health
-	AttackMod    float64 // Multiplier for base attack
-	DefenseMod   float64 // Multiplier for base defense
-	CritChance   int     // Base crit chance
-	BlockChance  int     // Base block chance
-	LifeSteal    int     // Life steal percentage
-	CritDamage   int     // Additional crit damage percentage
-	Regeneration int     // Health regeneration percentage
-	Description  string  // Flavor text for the enemy
+	HealthMod    float64
+	AttackMod    float64
+	DefenseMod   float64
+	CritChance   int
+	BlockChance  int
+	LifeSteal    int
+	CritDamage   int
+	Regeneration int
+	Description  string
 }
 
 // Define enemy archetypes
@@ -122,7 +122,7 @@ var enemyTypes = []EnemyType{
 		Description: "Strikes from the darkness with lethal precision.",
 	},
 	{
-		Name:         "Iron Juggernaut",
+		Name:         "Hans",
 		HealthMod:    1.6,
 		AttackMod:    0.9,
 		DefenseMod:   1.5,
@@ -178,7 +178,6 @@ var enemyTypes = []EnemyType{
 func (h *GameHandler) CreateEnemy(level int) *model.Player {
 	// Check if this is the final boss level
 	if level == len(enemyTypes)+1 {
-		// Create the final boss with scaled stats
 		baseHealth := 80 + (level * 10)
 		baseAttackMin := 5 + (level * 2)
 		baseAttackMax := 10 + (level * 3)
@@ -206,7 +205,6 @@ func (h *GameHandler) CreateEnemy(level int) *model.Player {
 		}
 	}
 
-	// Base stats that scale with level
 	baseHealth := 80 + (level * 8)
 	baseAttackMin := 5 + level
 	baseAttackMax := 10 + (level * 2)
@@ -214,24 +212,18 @@ func (h *GameHandler) CreateEnemy(level int) *model.Player {
 
 	// Select enemy type based on level
 	enemyIndex := level - 1
-	if enemyIndex >= len(enemyTypes) {
-		// For levels beyond our defined enemies, use a random high-tier enemy
-		enemyIndex = rand.Intn(len(enemyTypes)-6) + 6
-	}
 
 	enemyType := enemyTypes[enemyIndex]
 
-	// Apply enemy type modifiers
 	health := int(float64(baseHealth) * enemyType.HealthMod)
 	attackMin := int(float64(baseAttackMin) * enemyType.AttackMod)
 	attackMax := int(float64(baseAttackMax) * enemyType.AttackMod)
 	defense := int(float64(baseDefense) * enemyType.DefenseMod)
 
-	// Add some randomness to stats (smaller variance for more predictable enemies)
+	// Add some randomness to stats
 	healthVariance := rand.Intn(11) - 5 // -5 to +5
 	attackVariance := rand.Intn(3) - 1  // -1 to +1
 
-	// Create the enemy with themed stats
 	return &model.Player{
 		Name:         enemyType.Name,
 		Health:       health + healthVariance,

@@ -17,7 +17,6 @@ type GameHandler struct{}
 // TurnDelay is the delay between battle turns
 const TurnDelay = 800 * time.Millisecond
 
-// RandRange returns a random number between min and max (inclusive)
 func RandRange(min, max int) int {
 	return rand.Intn(max-min+1) + min
 }
@@ -26,13 +25,11 @@ func RandRange(min, max int) int {
 func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	damage := RandRange(attacker.AttackMin, attacker.AttackMax)
 
-	// Use attacker's crit chance instead of fixed value
 	critChance := model.CriticalChance
 	if attacker.CritChance > 0 {
 		critChance = attacker.CritChance
 	}
 
-	// Use defender's block chance instead of fixed value
 	blockChance := model.BlockChance
 	if defender.BlockChance > 0 {
 		blockChance = defender.BlockChance
@@ -42,7 +39,6 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	isBlocked := rand.Intn(100) < blockChance
 
 	if isCritical {
-		// Apply crit damage bonus if available
 		critMultiplier := 2.0
 		if attacker.CritDamage > 0 {
 			critMultiplier = 2.0 + (float64(attacker.CritDamage) / 100.0)
@@ -54,15 +50,13 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 		damage /= 2
 	}
 
-	// Apply defender's defense to reduce damage
 	damage -= defender.Defense
 	if damage < 1 {
-		damage = 1 // Minimum damage is 1
+		damage = 1
 	}
 
 	defender.Health -= damage
 
-	// Apply life steal if attacker has it
 	if attacker.LifeSteal > 0 {
 		healAmount := int(float64(damage) * float64(attacker.LifeSteal) / 100.0)
 		if healAmount > 0 {
@@ -74,7 +68,6 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	}
 
 	regen := 0
-	// Apply regeneration if attacker has it
 	if defender.Regeneration > 0 {
 		healAmount := int(float64(defender.MaxHealth) * float64(defender.Regeneration) / 100.0)
 		regen = healAmount
@@ -88,7 +81,6 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 
 	isGameOver := defender.Health <= 0
 
-	// Ensure health doesn't go below zero for display purposes
 	if defender.Health < 0 {
 		defender.Health = 0
 	}
@@ -97,6 +89,12 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	if isGameOver {
 		winnerName = attacker.Name
 		attacker.Wins++
+		if attacker.LifeOnKill > 0 {
+			attacker.Health += attacker.LifeOnKill
+			if attacker.Health > attacker.MaxHealth {
+				attacker.Health = attacker.MaxHealth
+			}
+		}
 	}
 
 	return model.BattleResult{
@@ -139,7 +137,6 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 
 	gameState.BattleLog = append(gameState.BattleLog, "")
 
-	// Call the UI package to draw the initial battle screen
 	ui.DrawUI(screen, hero, enemy, gameState)
 	time.Sleep(TurnDelay)
 
@@ -157,23 +154,12 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 					attacker, defender = enemy, hero
 				}
 
-				// Calculate damage and update health
 				result := CalculateDamage(attacker, defender)
 				gameState.AddToBattleLog(FormatBattleMessage(result))
 
-				// Check for game over
 				if result.IsGameOver {
 					gameState.AddToBattleLog("")
 
-					if hero.Wins >= 9 {
-						// Game is over
-						gameState.AddToBattleLog("🎉 Congratulations! You've defeated all Enemies! 🎉")
-						gameState.AddToBattleLog("🏆 You are the CHAMPION! 🏆")
-						gameState.GameOver = true
-						ui.DrawUI(screen, hero, enemy, gameState)
-						done <- true
-						return
-					}
 					if defender.IsHero {
 						// Hero lost
 						gameState.AddToBattleLog(fmt.Sprintf("💀 %s has fallen! GAME OVER 💀", hero.Name))
@@ -192,24 +178,22 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 						} else if hero.Wins == len(enemyTypes) {
 							gameState.AddToBattleLog("You've defeated all champions! Now face THE IMMORTAL!")
 							gameState.UpgradeMode = true
-							gameState.Upgrades = CreateUpgrades()
+							gameState.Upgrades = CreateUpgrades(hero)
 
 							// Otherwise, prepare for next battle
 						} else {
 							gameState.AddToBattleLog("Choose an upgrade to continue your journey!")
 							gameState.UpgradeMode = true
-							gameState.Upgrades = CreateUpgrades()
+							gameState.Upgrades = CreateUpgrades(hero)
 						}
 					}
 
-					// Update the UI with the final battle state
 					ui.DrawUI(screen, hero, enemy, gameState)
 					done <- true
 					return
 				}
 
 				turn++
-				// Update the UI after each turn
 				ui.DrawUI(screen, hero, enemy, gameState)
 				time.Sleep(TurnDelay)
 			}

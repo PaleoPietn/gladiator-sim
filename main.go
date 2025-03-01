@@ -10,7 +10,6 @@ import (
 
 func main() {
 
-	// Initialize screen
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		fmt.Println("Error creating screen:", err)
@@ -24,31 +23,21 @@ func main() {
 	}
 	screen.Clear()
 
-	// Starting Screen and Character Creation Screen
 	playerName := ui.ShowStartScreen(screen)
 
-	// Create game handler
 	gameHandler := &game.GameHandler{}
-
-	// Create hero
 	hero := game.NewHero(playerName)
 
-	// Initialize game state
 	gameState := game.NewGameState()
 
-	// Create first enemy
 	enemy := gameHandler.CreateEnemy(gameState.CurrentEnemy)
 
-	// Channels for game control
 	quit := make(chan bool)
 	done := make(chan bool)
 
-	// Start the input handler
 	ui.StartInputHandler(screen, hero, enemy, gameState, gameHandler, quit, done)
 
-	// Start the first battle
 	gameHandler.StartBattle(hero, enemy, screen, gameState, quit, done)
 
-	// Wait for quit signal
 	<-quit
 }

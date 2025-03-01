@@ -1,4 +1,3 @@
-// ui/draw.go
 package ui
 
 import (
@@ -46,7 +45,7 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 			// Check if character is an emoji or other wide character
 			width := runewidth.RuneWidth(c)
 			screen.SetContent(posX, y, c, nil, style)
-			posX += width // Advance by the actual width
+			posX += width
 		}
 	}
 
@@ -56,7 +55,7 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 	heroStyle := defaultStyle.Foreground(tcell.ColorGreen)
 	enemyStyle := defaultStyle.Foreground(tcell.ColorRed)
 	infoStyle := defaultStyle.Foreground(tcell.ColorWhite)
-	selectedStyle := defaultStyle.Background(tcell.ColorDarkBlue).Foreground(tcell.ColorWhite)
+	selectedStyle := defaultStyle.Background(tcell.ColorGainsboro).Foreground(tcell.ColorWhite)
 	criticalStyle := defaultStyle.Foreground(tcell.ColorYellow)
 	blockStyle := defaultStyle.Foreground(tcell.ColorTeal)
 
@@ -87,10 +86,8 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 		displayLog = gameState.BattleLog[len(gameState.BattleLog)-model.MaxLogEntries:]
 	}
 
-	// Process battle log for better formatting
 	for i, line := range displayLog {
 
-		// Use different styles for special messages
 		style := defaultStyle
 		if strings.Contains(line, "CRITICAL HIT") {
 			printText(2, startY+i, line, criticalStyle)

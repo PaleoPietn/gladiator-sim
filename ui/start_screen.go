@@ -11,13 +11,11 @@ import (
 func ShowStartScreen(screen tcell.Screen) string {
 	screen.Clear()
 
-	// Define styles
 	defaultStyle := tcell.StyleDefault
 	titleStyle := defaultStyle.Bold(true).Foreground(tcell.ColorYellow)
 	promptStyle := defaultStyle.Foreground(tcell.ColorWhite)
 	inputStyle := defaultStyle.Foreground(tcell.ColorGreen)
 
-	// Helper function to draw text
 	printText := func(x, y int, text string, style tcell.Style) {
 		posX := x
 		for _, c := range text {
@@ -31,7 +29,6 @@ func ShowStartScreen(screen tcell.Screen) string {
 	printText(10, 5, "WELCOME TO ROGUELIKE GLADIATOR ARENA", titleStyle)
 	printText(10, 8, "Enter your name, brave warrior:", promptStyle)
 
-	// Initialize player name
 	playerName := ""
 
 	// Draw input field
@@ -58,7 +55,6 @@ func ShowStartScreen(screen tcell.Screen) string {
 		case *tcell.EventKey:
 			switch ev.Key() {
 			case tcell.KeyEnter:
-				// Return the name when Enter is pressed, use "Hero" if empty
 				if strings.TrimSpace(playerName) == "" {
 					return "Hero"
 				}
@@ -70,13 +66,10 @@ func ShowStartScreen(screen tcell.Screen) string {
 				}
 
 			case tcell.KeyEscape:
-				// Default to "Hero" if user cancels
 				return "Hero"
 
 			default:
-				// Add typed character to name (if it's a printable rune)
 				if ev.Key() == tcell.KeyRune {
-					// Limit name length to 20 characters
 					if len(playerName) < 20 {
 						playerName += string(ev.Rune())
 					}

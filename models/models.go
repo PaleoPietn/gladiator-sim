@@ -15,6 +15,7 @@ type Player struct {
 	LifeSteal    int
 	CritDamage   int
 	Regeneration int
+	LifeOnKill   int
 	Description  string
 }
 
