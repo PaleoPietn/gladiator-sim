@@ -68,12 +68,12 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 	enemyHealthBar := DrawHealthBar(enemy.Health, enemy.MaxHealth, healthBarWidth)
 
 	printText(2, 3, fmt.Sprintf("%s %s", hero.Name, buffs), heroStyle)
-	printText(2, 4, fmt.Sprintf("HP: %d/%d %s", hero.Health, hero.MaxHealth, heroHealthBar), heroStyle)
+	printText(2, 4, fmt.Sprintf("%s %s", formatLifeCount(hero.Health, hero.MaxHealth), heroHealthBar), heroStyle)
 	printText(2, 5, fmt.Sprintf("ATK: %d-%d | DEF: %d | Wins: %d",
 		hero.AttackMin, hero.AttackMax, hero.Defense, hero.Wins), heroStyle)
 
 	printText(2, 7, fmt.Sprintf("%s", enemy.Name), enemyStyle)
-	printText(2, 8, fmt.Sprintf("HP: %d/%d %s", enemy.Health, enemy.MaxHealth, enemyHealthBar), enemyStyle)
+	printText(2, 8, fmt.Sprintf("%s %s", formatLifeCount(enemy.Health, enemy.MaxHealth), enemyHealthBar), enemyStyle)
 	printText(2, 9, fmt.Sprintf("ATK: %d-%d | DEF: %d",
 		enemy.AttackMin, enemy.AttackMax, enemy.Defense), enemyStyle)
 
@@ -124,4 +124,9 @@ func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameSt
 	}
 
 	screen.Show()
+}
+
+func formatLifeCount(health, maxHealth int) string {
+	minWidth := 7
+	return fmt.Sprintf("HP: %*s", minWidth, fmt.Sprintf("%d/%d", health, maxHealth))
 }
