@@ -70,7 +70,7 @@ func ShowStartScreen(screen tcell.Screen) string {
 
 			default:
 				if ev.Key() == tcell.KeyRune {
-					if len(playerName) < 20 {
+					if len(playerName) < 30 {
 						playerName += string(ev.Rune())
 					}
 				}
