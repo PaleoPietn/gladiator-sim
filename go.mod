@@ -1,4 +1,4 @@
-module stuff
+module gladiator-sim
 
 go 1.23.5
 

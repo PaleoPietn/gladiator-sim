@@ -2,8 +2,8 @@
 package game
 
 import (
+	model "gladiator-sim/models"
 	"math/rand"
-	model "stuff/models"
 )
 
 // EnemyType defines a template for creating enemies with specific characteristics

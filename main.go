@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"stuff/game"
-	"stuff/ui"
+	"gladiator-sim/game"
+	"gladiator-sim/ui"
 
 	"github.com/gdamore/tcell/v2"
 )

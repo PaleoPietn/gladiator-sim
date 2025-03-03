@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	model "stuff/models"
-	"stuff/ui"
+	model "gladiator-sim/models"
+	"gladiator-sim/ui"
 
 	"github.com/gdamore/tcell/v2"
 )

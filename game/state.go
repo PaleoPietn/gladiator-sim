@@ -1,6 +1,6 @@
 package game
 
-import model "stuff/models"
+import model "gladiator-sim/models"
 
 // NewGameState creates a new game state
 func NewGameState() *model.GameState {

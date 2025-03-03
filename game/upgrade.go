@@ -2,9 +2,9 @@ package game
 
 import (
 	"fmt"
+	model "gladiator-sim/models"
 	"math/rand"
 	"slices"
-	model "stuff/models"
 )
 
 // UpgradeType defines an upgrade with its properties and limitations

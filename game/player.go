@@ -1,6 +1,6 @@
 package game
 
-import model "stuff/models"
+import model "gladiator-sim/models"
 
 // Default stats for Player Character
 var heroDefaultStats = model.Player{

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	model "stuff/models"
+	model "gladiator-sim/models"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
