@@ -28,7 +28,7 @@ const (
 	logStartY      = 8
 	maxLogEntries  = 20
 	heroXIndex     = 2
-	enemyXIndex    = 2
+	enemyXIndex    = 52
 	playerYIndex   = 3
 
 	// Texts
