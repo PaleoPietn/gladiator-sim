@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-
+	// Start the UI
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		fmt.Println("Error creating screen:", err)
@@ -23,11 +23,11 @@ func main() {
 	}
 	screen.Clear()
 
+	// Start the game
 	playerName := ui.ShowStartScreen(screen)
 
 	gameHandler := &game.GameHandler{}
 	hero := game.NewHero(playerName)
-
 	gameState := game.NewGameState()
 
 	enemy := gameHandler.CreateEnemy(gameState.CurrentEnemy)

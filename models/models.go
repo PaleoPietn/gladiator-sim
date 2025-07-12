@@ -1,6 +1,7 @@
 package model
 
 // Player represents a gladiator with stats and abilities
+// TODO: make fields private and creates getters/setters if needed
 type Player struct {
 	Name         string
 	Health       int
@@ -48,11 +49,15 @@ type Upgrade struct {
 	Effect      func(*Player)
 }
 
-// Constants for game configuration
 const (
+	// Constants for game configuration
 	CriticalChance = 10 // 1 in 10 chance (10%)
 	BlockChance    = 10 // 1 in 10 chance (10%)
-	MaxLogEntries  = 20
+
+	// BattleLogs
+	CriticalHit = "CRITICAL HIT"
+	Blocked     = "BLOCKED"
+	Victorious   = "VICTORIOUS"
 )
 
 // AddToBattleLog adds a message to the battle log

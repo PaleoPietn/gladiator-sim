@@ -115,10 +115,10 @@ func FormatBattleMessage(result model.BattleResult) string {
 		result.Attacker.Name, result.Defender.Name, result.Damage)
 
 	if result.IsCritical {
-		msg += " 󰓥 CRITICAL HIT!"
+		msg += fmt.Sprintf(" 󰓥 %s!", model.CriticalHit)
 	}
 	if result.IsBlocked {
-		msg += " 󰒘 BLOCKED!"
+		msg += fmt.Sprintf(" 󰒘 %s!", model.Blocked)
 	}
 	return msg
 }
@@ -167,7 +167,7 @@ func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen
 						gameState.GameOver = true
 					} else {
 						// Hero won
-						gameState.AddToBattleLog(fmt.Sprintf("🏆 %s is VICTORIOUS! 🏆", hero.Name))
+						gameState.AddToBattleLog(fmt.Sprintf("🏆 %s is %s! 🏆", hero.Name, model.Victorious))
 
 						if hero.Wins >= len(enemyTypes)+1 {
 							gameState.AddToBattleLog("🎉 LEGENDARY VICTORY! You've defeated The Immortal! 🎉")

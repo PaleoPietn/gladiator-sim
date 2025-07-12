@@ -10,10 +10,42 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-// DrawHealthBar creates a visual health bar
-func DrawHealthBar(current, max int, width int) string {
+var (
+	// Define styles
+	defaultStyle  = tcell.StyleDefault
+	titleStyle    = defaultStyle.Bold(true).Foreground(tcell.ColorYellow)
+	heroStyle     = defaultStyle.Foreground(tcell.ColorGreen)
+	enemyStyle    = defaultStyle.Foreground(tcell.ColorRed)
+	infoStyle     = defaultStyle.Foreground(tcell.ColorWhite)
+	selectedStyle = defaultStyle.Background(tcell.ColorGainsboro).Foreground(tcell.ColorWhite)
+	criticalStyle = defaultStyle.Foreground(tcell.ColorYellow)
+	blockStyle    = defaultStyle.Foreground(tcell.ColorTeal)
+)
+
+const (
+	// UI
+	healthBarWidth = 20
+	logStartY      = 8
+	maxLogEntries  = 20
+	heroXIndex     = 2
+	enemyXIndex    = 2
+	playerYIndex   = 3
+
+	// Texts
+	titleText        = "ROGUELIKE GLADIATOR ARENA"
+	battleLogText    = "BATTLE LOG:"
+	upgradeText      = "CHOOSE YOUR UPGRADE:"
+	prefixUnselected = "   "
+	prefixSelected   = ">> "
+	upgradeHelper    = "Use UP/DOWN arrows to select, ENTER to confirm"
+	gameOverHelper   = "Game Over! Press 'q' to exit or 'r' to start a new run."
+	quitHelper       = "Press 'q' to quit."
+)
+
+// drawHealthBar creates a visual health bar
+func drawHealthBar(current, max int, width int) string {
 	if max <= 0 {
-		return "[ERROR]"
+		return "[ERROR]" // TODO: return an actual error?
 	}
 
 	filledWidth := int(float64(current) / float64(max) * float64(width))
@@ -31,99 +63,114 @@ func DrawHealthBar(current, max int, width int) string {
 
 // DrawUI renders the game interface to the screen
 func DrawUI(screen tcell.Screen, hero *model.Player, enemy *model.Player, gameState *model.GameState) {
-	buffs := ""
-	if hero.Regeneration > 0 {
-		buffs += " 🌿"
-	}
-
 	screen.Clear()
-
-	// Helper function to draw text with proper handling of wide characters
-	printText := func(x, y int, text string, style tcell.Style) {
-		posX := x
-		for _, c := range text {
-			// Check if character is an emoji or other wide character
-			width := runewidth.RuneWidth(c)
-			screen.SetContent(posX, y, c, nil, style)
-			posX += width
-		}
-	}
-
-	// Define styles
-	defaultStyle := tcell.StyleDefault
-	titleStyle := defaultStyle.Bold(true).Foreground(tcell.ColorYellow)
-	heroStyle := defaultStyle.Foreground(tcell.ColorGreen)
-	enemyStyle := defaultStyle.Foreground(tcell.ColorRed)
-	infoStyle := defaultStyle.Foreground(tcell.ColorWhite)
-	selectedStyle := defaultStyle.Background(tcell.ColorGainsboro).Foreground(tcell.ColorWhite)
-	criticalStyle := defaultStyle.Foreground(tcell.ColorYellow)
-	blockStyle := defaultStyle.Foreground(tcell.ColorTeal)
+	defer screen.Show()
 
 	// Draw title and stats
-	printText(2, 1, "ROGUELIKE GLADIATOR ARENA", titleStyle)
+	printText(screen, 2, 1, titleText, titleStyle)
 
-	// Draw player stats with health bars
-	healthBarWidth := 20
-	heroHealthBar := DrawHealthBar(hero.Health, hero.MaxHealth, healthBarWidth)
-	enemyHealthBar := DrawHealthBar(enemy.Health, enemy.MaxHealth, healthBarWidth)
-
-	printText(2, 3, fmt.Sprintf("%s %s", hero.Name, buffs), heroStyle)
-	printText(2, 4, fmt.Sprintf("%s %s", formatLifeCount(hero.Health, hero.MaxHealth), heroHealthBar), heroStyle)
-	printText(2, 5, fmt.Sprintf("ATK: %d-%d | DEF: %d | Wins: %d",
-		hero.AttackMin, hero.AttackMax, hero.Defense, hero.Wins), heroStyle)
-
-	printText(2, 7, fmt.Sprintf("%s", enemy.Name), enemyStyle)
-	printText(2, 8, fmt.Sprintf("%s %s", formatLifeCount(enemy.Health, enemy.MaxHealth), enemyHealthBar), enemyStyle)
-	printText(2, 9, fmt.Sprintf("ATK: %d-%d | DEF: %d",
-		enemy.AttackMin, enemy.AttackMax, enemy.Defense), enemyStyle)
+	// Draw players (hero & enemy) stats with health bars
+	drawPlayer(screen, hero)
+	drawPlayer(screen, enemy)
 
 	// Draw battle log with scrolling
-	printText(2, 11, "BATTLE LOG:", titleStyle)
+	printText(screen, 2, 11, battleLogText, titleStyle)
 
-	startY := 12
+	// TODO: refactor BattleLog to be its own type that includes the string + the status (crit, block, victory...)
+	// so we can avoid strings.Contains for styling
 	displayLog := gameState.BattleLog
-	if len(gameState.BattleLog) > model.MaxLogEntries {
-		displayLog = gameState.BattleLog[len(gameState.BattleLog)-model.MaxLogEntries:]
+	// Pop the top logs if the length of the battle is too long to display everything
+	if len(gameState.BattleLog) > maxLogEntries {
+		displayLog = gameState.BattleLog[len(gameState.BattleLog)-maxLogEntries:]
 	}
 
+	// Style the log if special (crit, block, victory)
 	for i, line := range displayLog {
-
 		style := defaultStyle
-		if strings.Contains(line, "CRITICAL HIT") {
-			printText(2, startY+i, line, criticalStyle)
-		} else if strings.Contains(line, "BLOCKED") {
-			printText(2, startY+i, line, blockStyle)
-		} else if strings.Contains(line, "VICTORIOUS") {
-			printText(2, startY+i, line, titleStyle)
-		} else {
-			printText(2, startY+i, line, style)
+		switch {
+		case strings.Contains(line, model.CriticalHit):
+			printText(screen, 2, logStartY+i, line, criticalStyle)
+		case strings.Contains(line, model.Blocked):
+			printText(screen, 2, logStartY+i, line, blockStyle)
+		case strings.Contains(line, model.Victorious):
+			printText(screen, 2, logStartY+i, line, titleStyle)
+		default:
+			printText(screen, 2, logStartY+i, line, style)
 		}
 	}
 
 	// Show controls or upgrade options
-	controlsY := startY + len(displayLog) + 2
+	controlsY := logStartY + len(displayLog) + 2
 
-	if gameState.UpgradeMode {
-		printText(2, controlsY, "CHOOSE YOUR UPGRADE:", titleStyle)
+	switch {
+	case gameState.UpgradeMode:
+		printText(screen, 2, controlsY, upgradeText, titleStyle)
 		for i, upgrade := range gameState.Upgrades {
 			style := infoStyle
-			prefix := "   "
+
+			prefix := prefixUnselected
 			if i == gameState.SelectedUpgrade {
 				style = selectedStyle
-				prefix = ">> "
+				prefix = prefixSelected
 			}
-			printText(2, controlsY+i+1, fmt.Sprintf("%s%d. %s - %s",
-				prefix, i+1, upgrade.Name, upgrade.Description), style)
+			printText(screen, 2, controlsY+i+1, fmt.Sprintf("%s%d. %s - %s", prefix, i+1, upgrade.Name, upgrade.Description), style)
 		}
-		printText(2, controlsY+len(gameState.Upgrades)+2,
-			"Use UP/DOWN arrows to select, ENTER to confirm", infoStyle)
-	} else if gameState.GameOver {
-		printText(2, controlsY, "Game Over! Press 'q' to exit or 'r' to start a new run.", infoStyle)
-	} else {
-		printText(2, controlsY, "Press 'q' to quit.", infoStyle)
+		printText(screen, 2, controlsY+len(gameState.Upgrades)+2, upgradeHelper, infoStyle)
+	case gameState.GameOver:
+		printText(screen, 2, controlsY, gameOverHelper, infoStyle)
+	default:
+		printText(screen, 2, controlsY, quitHelper, infoStyle)
+	}
+}
+
+func generateBuffsString(player *model.Player) string {
+	// TODO: is the check necessary? Maybe we want to print buffs for enemies too?
+	if !player.IsHero {
+		return ""
 	}
 
-	screen.Show()
+	// TODO: create an array of buffs that were selected to print them here
+	buffs := ""
+	if player.Regeneration > 0 {
+		buffs += " 🌿"
+	}
+
+	return buffs
+}
+
+// Helper function to draw text with proper handling of wide characters
+// TODO: refactor to pass only screen + an object that contains the other characters
+func printText(screen tcell.Screen, x, y int, text string, style tcell.Style) {
+	posX := x
+	for _, c := range text {
+		// Check if character is an emoji or other wide character
+		width := runewidth.RuneWidth(c)
+		screen.SetContent(posX, y, c, nil, style)
+		posX += width
+	}
+}
+
+func drawPlayer(screen tcell.Screen, player *model.Player) {
+	style := heroStyle
+	xIndex := heroXIndex
+
+	startYIndex := playerYIndex
+	if !player.IsHero {
+		xIndex = enemyXIndex
+		style = enemyStyle
+	}
+
+	healthBar := drawHealthBar(player.Health, player.MaxHealth, healthBarWidth)
+	printText(screen, xIndex, startYIndex, fmt.Sprintf("%s %s", player.Name, generateBuffsString(player)), style)
+	startYIndex++
+	printText(screen, xIndex, startYIndex, fmt.Sprintf("%s %s", formatLifeCount(player.Health, player.MaxHealth), healthBar), style)
+	startYIndex++
+	switch {
+	case player.IsHero:
+		printText(screen, xIndex, startYIndex, fmt.Sprintf("ATK: %d-%d | DEF: %d | Wins: %d", player.AttackMin, player.AttackMax, player.Defense, player.Wins), style)
+	default:
+		printText(screen, xIndex, startYIndex, fmt.Sprintf("ATK: %d-%d | DEF: %d", player.AttackMin, player.AttackMax, player.Defense), style)
+	}
 }
 
 func formatLifeCount(health, maxHealth int) string {
