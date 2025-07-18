@@ -6,9 +6,26 @@ import (
 	"time"
 
 	model "gladiator-sim/models"
-	"gladiator-sim/ui"
+)
 
-	"github.com/gdamore/tcell/v2"
+const (
+	LogFirstBattle = "🔥GLADIATOR BATTLE🔥"
+
+	LogHeroDeath           = "💀 %s has fallen! GAME OVER 💀"
+	LogHeroDeathFinalScore = "Final Score: %d victories"
+
+	logLastFight = "You've defeated all champions! Now face THE IMMORTAL!"
+
+	logVictory        = "🏆 %s is VICTORIUS! 🏆"
+	logPrepareUpgrade = "Choose an upgrade to continue your journey!" // TODO: move this log to UI?
+
+	logLegendaryVictory1 = "🎉 LEGENDARY VICTORY! You've defeated The Immortal! 🎉"
+	logLegendaryVictory2 = "🏆 Your name will be remembered for eternity! 🏆"
+
+	logCritical = " 󰓥 CRITICAL HIT!"
+	logBlocked  = " 󰒘 BLOCKED!"
+
+	logStrike = "%s strikes %s for %d damage!"
 )
 
 // GameHandler implements the ui.InputHandler interface
@@ -17,13 +34,13 @@ type GameHandler struct{}
 // TurnDelay is the delay between battle turns
 const TurnDelay = 800 * time.Millisecond
 
-func RandRange(min, max int) int {
+func randRange(min, max int) int {
 	return rand.Intn(max-min+1) + min
 }
 
 // CalculateDamage determines attack damage with critical hits and blocks
-func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
-	damage := RandRange(attacker.AttackMin, attacker.AttackMax)
+func calculateDamage(attacker, defender *model.Player) model.BattleResult {
+	damage := randRange(attacker.AttackMin, attacker.AttackMax)
 
 	critChance := model.CriticalChance
 	if attacker.CritChance > 0 {
@@ -109,94 +126,69 @@ func CalculateDamage(attacker, defender *model.Player) model.BattleResult {
 	}
 }
 
-// FormatBattleMessage creates a descriptive message for the battle log
-func FormatBattleMessage(result model.BattleResult) string {
-	msg := fmt.Sprintf("%s strikes %s for %d damage!",
-		result.Attacker.Name, result.Defender.Name, result.Damage)
-
-	if result.IsCritical {
-		msg += fmt.Sprintf(" 󰓥 %s!", model.CriticalHit)
-	}
-	if result.IsBlocked {
-		msg += fmt.Sprintf(" 󰒘 %s!", model.Blocked)
-	}
-	return msg
-}
-
 // StartBattle handles the battle loop between two players
-func (h *GameHandler) StartBattle(hero, enemy *model.Player, screen tcell.Screen, gameState *model.GameState, quit chan bool, done chan bool) {
-	gameState.BattleLog = []string{
-		"🔥GLADIATOR BATTLE🔥",
-		fmt.Sprintf("%s vs %s", hero.Name, enemy.Name),
-		"",
+func (eng *GameEngine) StartBattle() {
+	battleStates := []*model.BattleState{
+		eng.generateBattleState(LogFirstBattle, model.LogTypeTitle, model.LogWaitTimeShort),
+		eng.generateBattleState(fmt.Sprintf("%s vs %s", eng.hero.Name, eng.enemy.Name), model.LogTypeTitle, model.LogWaitTimeShort),
 	}
 
-	if enemy.Description != "" {
-		gameState.BattleLog = append(gameState.BattleLog, enemy.Description)
+	if eng.enemy.Description != "" {
+		battleStates = append(battleStates, eng.generateBattleState(eng.enemy.Description, model.LogTypeInfo, model.LogWaitTimeLong))
 	}
 
-	gameState.BattleLog = append(gameState.BattleLog, "")
+	turn := 0
 
-	ui.DrawUI(screen, hero, enemy, gameState)
-	time.Sleep(TurnDelay)
+	for eng.hero.Health > 0 && eng.enemy.Health > 0 {
+		// Determine attacker and defender based on turn
+		attacker, defender := eng.hero, eng.enemy
+		if turn%2 == 1 {
+			attacker, defender = eng.enemy, eng.hero
+		}
 
-	go func() {
-		turn := 0
+		result := calculateDamage(attacker, defender)
 
-		for hero.Health > 0 && enemy.Health > 0 {
-			select {
-			case <-quit:
-				return // Exit if user presses 'q'
-			default:
-				// Determine attacker and defender based on turn
-				attacker, defender := hero, enemy
-				if turn%2 == 1 {
-					attacker, defender = enemy, hero
+		msg := fmt.Sprintf(logStrike, result.Attacker.Name, result.Defender.Name, result.Damage)
+		switch {
+		case result.IsCritical:
+			msg += logCritical
+			battleStates = append(battleStates, eng.generateBattleState(msg, model.LogTypeCritical, model.LogWaitTimeDefault))
+		case result.IsBlocked:
+			msg += logBlocked
+			battleStates = append(battleStates, eng.generateBattleState(msg, model.LogTypeBlock, model.LogWaitTimeDefault))
+		default:
+			battleStates = append(battleStates, eng.generateBattleState(msg, model.LogTypeInfo, model.LogWaitTimeDefault))
+		}
+
+		if result.IsGameOver {
+			if defender.IsHero {
+				// Hero lost
+				battleStates = append(battleStates, eng.generateBattleState(fmt.Sprintf(LogHeroDeath, eng.hero.Name), model.LogTypeInfo, model.LogWaitTimeDefault))
+				battleStates = append(battleStates, eng.generateBattleState(fmt.Sprintf(LogHeroDeathFinalScore, eng.hero.Wins), model.LogTypeInfo, model.LogWaitTimeDefault))
+				eng.gameState.GameOver = true
+			} else {
+				// Hero won
+				battleStates = append(battleStates, eng.generateBattleState(fmt.Sprintf(logVictory, eng.hero.Name), model.LogTypeTitle, model.LogWaitTimeShort))
+
+				switch {
+				// Hero won the last fight
+				case eng.hero.Wins >= len(enemyTypes)+1:
+					battleStates = append(battleStates, eng.generateBattleState(logLegendaryVictory1, model.LogTypeTitle, model.LogWaitTimeShort))
+					battleStates = append(battleStates, eng.generateBattleState(logLegendaryVictory2, model.LogTypeTitle, model.LogWaitTimeShort))
+					eng.gameState.GameOver = true
+
+					// Prepare for final battle
+				case eng.hero.Wins == len(enemyTypes):
+					battleStates = append(battleStates, eng.generateBattleState(logLastFight, model.LogTypeTitle, model.LogWaitTimeShort))
+
+					// Otherwise, prepare for next battle
+				default:
+					battleStates = append(battleStates, eng.generateBattleState(logPrepareUpgrade, model.LogTypeTitle, model.LogWaitTimeShort))
 				}
-
-				result := CalculateDamage(attacker, defender)
-				gameState.AddToBattleLog(FormatBattleMessage(result))
-
-				if result.IsGameOver {
-					gameState.AddToBattleLog("")
-
-					if defender.IsHero {
-						// Hero lost
-						gameState.AddToBattleLog(fmt.Sprintf("💀 %s has fallen! GAME OVER 💀", hero.Name))
-						gameState.AddToBattleLog(fmt.Sprintf("Final Score: %d victories", hero.Wins))
-						gameState.GameOver = true
-					} else {
-						// Hero won
-						gameState.AddToBattleLog(fmt.Sprintf("🏆 %s is %s! 🏆", hero.Name, model.Victorious))
-
-						if hero.Wins >= len(enemyTypes)+1 {
-							gameState.AddToBattleLog("🎉 LEGENDARY VICTORY! You've defeated The Immortal! 🎉")
-							gameState.AddToBattleLog("🏆 Your name will be remembered for eternity! 🏆")
-							gameState.GameOver = true
-
-							// Prepare for final battle
-						} else if hero.Wins == len(enemyTypes) {
-							gameState.AddToBattleLog("You've defeated all champions! Now face THE IMMORTAL!")
-							gameState.UpgradeMode = true
-							gameState.Upgrades = CreateUpgrades(hero)
-
-							// Otherwise, prepare for next battle
-						} else {
-							gameState.AddToBattleLog("Choose an upgrade to continue your journey!")
-							gameState.UpgradeMode = true
-							gameState.Upgrades = CreateUpgrades(hero)
-						}
-					}
-
-					ui.DrawUI(screen, hero, enemy, gameState)
-					done <- true
-					return
-				}
-
-				turn++
-				ui.DrawUI(screen, hero, enemy, gameState)
-				time.Sleep(TurnDelay)
 			}
 		}
-	}()
+		turn++
+	}
+
+	eng.ui.DrawBattle(battleStates)
 }

@@ -3,7 +3,7 @@ package game
 import model "gladiator-sim/models"
 
 // Default stats for Player Character
-var heroDefaultStats = model.Player{
+var heroDefaultStats = &model.Player{
 	Wins:         0,
 	IsHero:       true,
 	Health:       130,
@@ -22,22 +22,22 @@ var heroDefaultStats = model.Player{
 func NewHero(playerName string) *model.Player {
 	hero := heroDefaultStats
 	hero.Name = playerName
-	return &hero
+	return hero
 }
 
 // ResetHero resets the hero to starting stats
-func (h *GameHandler) ResetHero(hero *model.Player) {
+func (eng *GameEngine) resetHero() {
 	// keep old name
-	name := hero.Name
+	name := eng.hero.Name
 
 	// reset hero stats
-	*hero = heroDefaultStats
+	eng.hero = heroDefaultStats
 
 	// set old name
-	hero.Name = name
+	eng.hero.Name = name
 }
 
-// HandleUpgrade applies an upgrade to the player
-func (h *GameHandler) HandleUpgrade(hero *model.Player, upgrade model.Upgrade) {
-	upgrade.Effect(hero)
+// applyUpgrade applies an upgrade to the player
+func (eng *GameEngine) applyUpgrade(upgrade model.Upgrade) {
+	upgrade.Effect(eng.hero)
 }

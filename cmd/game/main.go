@@ -9,6 +9,8 @@ import (
 )
 
 func main() {
+	quit := make(chan struct{})
+
 	// Start the UI
 	screen, err := tcell.NewScreen()
 	if err != nil {
@@ -23,21 +25,10 @@ func main() {
 	}
 	screen.Clear()
 
-	// Start the game
-	playerName := ui.ShowStartScreen(screen)
+	// Start the engine and register quit inputs in UI
+	ui := ui.NewUI(screen, quit)
+	gameEngine := game.NewEngine(ui, quit)
 
-	gameHandler := &game.GameHandler{}
-	hero := game.NewHero(playerName)
-	gameState := game.NewGameState()
-
-	enemy := gameHandler.CreateEnemy(gameState.CurrentEnemy)
-
-	quit := make(chan bool)
-	done := make(chan bool)
-
-	ui.StartInputHandler(screen, hero, enemy, gameState, gameHandler, quit, done)
-
-	gameHandler.StartBattle(hero, enemy, screen, gameState, quit, done)
-
-	<-quit
+	// This should take no argument and just use its internals
+	gameEngine.StartGameLoop()
 }
