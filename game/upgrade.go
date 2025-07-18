@@ -285,14 +285,14 @@ var allUpgrades = []UpgradeType{
 	// First Strike -> 25% chance to attack twice on first turn
 }
 
-// CreateUpgrades generates a list of possible upgrades for the player to choose from
-func CreateUpgrades(hero *model.Player) []model.Upgrade {
+// generateUpgrades generates a list of possible upgrades for the player to choose from
+func (eng *GameEngine) generateUpgrades() []model.Upgrade {
 	availableUpgrades := []UpgradeType{}
 
 	for _, upgrade := range allUpgrades {
 		currentLevel := GetUpgradeLevel(upgrade.Name)
 
-		if currentLevel < upgrade.MaxLevel && upgrade.IsAvailable(hero) {
+		if currentLevel < upgrade.MaxLevel && upgrade.IsAvailable(eng.hero) {
 			availableUpgrades = append(availableUpgrades, upgrade)
 		}
 	}

@@ -175,7 +175,7 @@ var enemyTypes = []EnemyType{
 }
 
 // CreateEnemy generates a themed enemy based on the current level
-func (h *GameHandler) CreateEnemy(level int) *model.Player {
+func CreateEnemy(level int) *model.Player {
 	// Check if this is the final boss level
 	if level == len(enemyTypes)+1 {
 		baseHealth := 80 + (level * 10)
@@ -202,6 +202,7 @@ func (h *GameHandler) CreateEnemy(level int) *model.Player {
 			Regeneration: finalBoss.Regeneration,
 			Description:  finalBoss.Description,
 			IsHero:       false,
+			Wins:         randRange(level+level, level*level),
 		}
 	}
 
@@ -238,6 +239,7 @@ func (h *GameHandler) CreateEnemy(level int) *model.Player {
 		Regeneration: enemyType.Regeneration,
 		Description:  enemyType.Description,
 		IsHero:       false,
+		Wins:         randRange(level, level+level),
 	}
 }
 
